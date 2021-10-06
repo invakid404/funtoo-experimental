@@ -1,0 +1,38 @@
+name: Verify Jira ticket
+on:
+  pull_request:
+    types:
+      - labeled
+      - unlabeled
+      - synchronize
+      - opened
+      - edited
+      - ready_for_review
+      - reopened
+      - unlocked
+  pull_request_review:
+    types:
+      - submitted
+
+jobs:
+  jira:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Match PR title
+        id: pr_title
+        uses: invakid404/pr-title-matcher@master
+        with:
+          regex: "(?<ticket>FL-\\d+):.+$"
+          label: "bad title"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate ticket
+        uses: invakid404/jira-ticket-validator@master
+        with:
+          ticket: ${{ steps.pr_title.outputs.ticket }}
+          fields: "fields.status.name:value === 'Ready to Fix' || value === 'In Progress'"
+          label: "bad ticket"
+          host: "bugs.funtoo.org"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
